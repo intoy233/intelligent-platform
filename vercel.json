@@ -29,7 +29,7 @@
     }
   ],
   "functions": {
-    "app/**/*.js": {
+    "api/**/*.js": {
       "runtime": "nodejs18.x"
     }
   }
