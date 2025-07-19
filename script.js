@@ -21,7 +21,11 @@ const voiceInputBtn = document.getElementById('voiceInput');
 
 // 全局变量
 let mediaStream = null;
+let currentUser = null;
 let isRecording = false;
+let mediaRecorder = null;
+let audioChunks = [];
+let cozeInitialized = false; // Coze初始化状态
 
 // 初始化
 document.addEventListener('DOMContentLoaded', function() {
@@ -29,7 +33,43 @@ document.addEventListener('DOMContentLoaded', function() {
     initializeEventListeners();
     updateSendButtonState();
     checkUserLoginStatus();
+    initializeCoze(); // 初始化Coze智能体
 });
+
+// 初始化Coze智能体
+async function initializeCoze() {
+    try {
+        // 检查Coze配置
+        if (!window.cozeConfig || !window.cozeClient) {
+            console.warn('Coze智能体模块未加载');
+            return;
+        }
+        
+        const configStatus = window.cozeConfig.getConfigStatus();
+        if (!configStatus.valid) {
+            console.warn('Coze配置不完整:', configStatus.message);
+            showNotification('请先配置Coze API Key和Bot ID', 'warning');
+            return;
+        }
+        
+        // 初始化Coze客户端
+        await window.cozeClient.initialize();
+        cozeInitialized = true;
+        console.log('Coze智能体初始化成功');
+        showNotification('Coze智能体已连接', 'success');
+        
+        // 添加欢迎消息
+        addMessage('你好！我是Coze智能体，有什么可以帮助您的吗？', 'bot');
+        
+    } catch (error) {
+        console.error('Coze智能体初始化失败:', error);
+        cozeInitialized = false;
+        showNotification(`Coze连接失败: ${error.message}`, 'error');
+        
+        // 添加错误提示消息
+        addMessage('抱歉，智能体暂时无法连接，请检查网络或稍后再试。', 'bot');
+    }
+}
 
 // 检查用户登录状态
 function checkUserLoginStatus() {
@@ -237,7 +277,7 @@ function capturePhoto() {
 }
 
 // 聊天功能
-function sendMessage() {
+async function sendMessage() {
     const message = messageInput.value.trim();
     if (!message) return;
     
@@ -248,18 +288,85 @@ function sendMessage() {
     messageInput.value = '';
     updateSendButtonState();
     
-    // 模拟机器人回复
-    setTimeout(() => {
-        const responses = [
-            '我收到了您的消息，正在处理中...',
-            '这是一个很有趣的问题！',
-            '感谢您的输入，我会认真考虑的。',
-            '您说得很对，让我想想如何回应。',
-            '这个话题很有意思，我们可以深入讨论。'
-        ];
-        const randomResponse = responses[Math.floor(Math.random() * responses.length)];
-        addMessage(randomResponse, 'bot');
-    }, 1000);
+    // 显示正在输入状态
+    const typingIndicator = addTypingIndicator();
+    
+    try {
+        let response;
+        
+        if (cozeInitialized && window.cozeClient) {
+            // 使用Coze智能体
+            try {
+                const result = await window.cozeClient.sendMessage(message);
+                if (result.success) {
+                    response = result.message;
+                } else {
+                    throw new Error(result.error || '智能体响应失败');
+                }
+            } catch (cozeError) {
+                console.error('Coze智能体响应失败:', cozeError);
+                response = '抱歉，智能体暂时无法响应，请稍后再试。';
+                showNotification('智能体响应失败', 'error');
+            }
+        } else {
+            // 降级到模拟响应
+            response = await getSimulatedResponse(message);
+        }
+        
+        // 移除正在输入指示器
+        removeTypingIndicator(typingIndicator);
+        
+        // 添加机器人回复
+        addMessage(response, 'bot');
+        
+    } catch (error) {
+        console.error('发送消息失败:', error);
+        removeTypingIndicator(typingIndicator);
+        addMessage('抱歉，发生了错误，请稍后再试。', 'bot');
+        showNotification('发送消息失败', 'error');
+    }
+}
+
+// 获取模拟响应（降级方案）
+async function getSimulatedResponse(message) {
+    // 模拟网络延迟
+    await new Promise(resolve => setTimeout(resolve, 1000 + Math.random() * 2000));
+    
+    const responses = [
+        '我收到了您的消息，正在处理中...',
+        '这是一个很有趣的问题！',
+        '感谢您的输入，我会认真考虑的。',
+        '您说得很对，让我想想如何回应。',
+        '这个话题很有意思，我们可以深入讨论。'
+    ];
+    
+    return responses[Math.floor(Math.random() * responses.length)];
+}
+
+// 添加正在输入指示器
+function addTypingIndicator() {
+    const typingDiv = document.createElement('div');
+    typingDiv.className = 'message bot-message typing-indicator';
+    typingDiv.innerHTML = `
+        <div class="typing-dots">
+            <span></span>
+            <span></span>
+            <span></span>
+        </div>
+        <span class="typing-text">智能体正在思考...</span>
+    `;
+    
+    chatMessages.appendChild(typingDiv);
+    chatMessages.scrollTop = chatMessages.scrollHeight;
+    
+    return typingDiv;
+}
+
+// 移除正在输入指示器
+function removeTypingIndicator(indicator) {
+    if (indicator && indicator.parentNode) {
+        indicator.parentNode.removeChild(indicator);
+    }
 }
 
 function addMessage(text, sender) {

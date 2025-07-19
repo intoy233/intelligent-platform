@@ -469,9 +469,7 @@
 /* 密码切换按钮（显示/隐藏密码）*/
 .password-toggle {
     position: absolute;             /* 绝对定位 */
-    right: 1rem;                    /* 距离右边距离 - 移动到输入框内部 */
-    top: 50%;                       /* 垂直居中定位 */
-    transform: translateY(-50%);    /* 精确垂直居中 */
+    right: 1.2rem;                  /* 距离右边距离 - 可调整 */
     background: none;               /* 无背景 */
     border: none;                   /* 无边框 */
     color: var(--theme-text-secondary);  /* 按钮颜色 */
@@ -481,11 +479,6 @@
     font-size: 1rem;                /* 字体大小 - 可调整 */
     z-index: 2;                     /* 确保在输入框之上 */
     border-radius: 6px;             /* 圆角 */
-    width: 2rem;                    /* 固定宽度 */
-    height: 2rem;                   /* 固定高度 */
-    display: flex;                  /* 弹性布局 */
-    align-items: center;            /* 垂直居中 */
-    justify-content: center;        /* 水平居中 */
 }
 
 /* 密码切换按钮悬停效果 */
@@ -498,7 +491,7 @@
 /* 密码输入框右内边距调整（为切换按钮留空间）*/
 .input-wrapper input[type="password"],
 .input-wrapper input[type="text"] {
-    padding-right: 2.8rem;          /* 右内边距 - 调整为更紧凑的空间 */
+    padding-right: 3.2rem;          /* 右内边距 - 可调整 */
 }
 
 /* ========================================

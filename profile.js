@@ -197,6 +197,10 @@ class ProfileManager {
 
             // 更新当前用户信息中的昵称
             this.currentUser.nickname = nickname;
+            // 同步头像到当前用户数据
+            if (avatar.startsWith('data:')) {
+                this.currentUser.avatar = avatar;
+            }
             localStorage.setItem('currentUser', JSON.stringify(this.currentUser));
 
             // 恢复按钮状态
@@ -215,8 +219,275 @@ class ProfileManager {
 
     // 修改密码
     changePassword() {
-        this.showNotification('密码修改功能开发中...', 'info');
-        // 这里可以跳转到密码修改页面或显示密码修改模态框
+        // 显示密码修改模态框
+        document.getElementById('changePasswordModal').classList.remove('hidden');
+        
+        // 清空所有输入框
+        document.getElementById('currentPassword').value = '';
+        document.getElementById('newPassword').value = '';
+        document.getElementById('confirmNewPassword').value = '';
+        
+        // 重置密码强度和要求
+        this.resetPasswordValidation();
+        
+        // 绑定事件监听器
+        this.bindPasswordEvents();
+        
+        // 聚焦当前密码输入框
+        setTimeout(() => {
+            document.getElementById('currentPassword').focus();
+        }, 100);
+    }
+
+    // 绑定密码修改相关事件
+    bindPasswordEvents() {
+        const newPasswordInput = document.getElementById('newPassword');
+        const confirmPasswordInput = document.getElementById('confirmNewPassword');
+        
+        // 移除之前的事件监听器（避免重复绑定）
+        newPasswordInput.removeEventListener('input', this.handleNewPasswordInput);
+        confirmPasswordInput.removeEventListener('input', this.handleConfirmPasswordInput);
+        
+        // 绑定新的事件监听器
+        this.handleNewPasswordInput = () => {
+            this.checkPasswordStrength();
+            this.validatePasswordRequirements();
+            this.updateChangePasswordButton();
+        };
+        
+        this.handleConfirmPasswordInput = () => {
+            this.validatePasswordMatch();
+            this.updateChangePasswordButton();
+        };
+        
+        newPasswordInput.addEventListener('input', this.handleNewPasswordInput);
+        confirmPasswordInput.addEventListener('input', this.handleConfirmPasswordInput);
+    }
+
+    // 检查密码强度
+    checkPasswordStrength() {
+        const password = document.getElementById('newPassword').value;
+        const strengthFill = document.getElementById('strengthFill');
+        const strengthText = document.getElementById('strengthText');
+        
+        if (!password) {
+            strengthFill.className = 'strength-fill';
+            strengthText.textContent = '密码强度：无';
+            return;
+        }
+        
+        let score = 0;
+        let feedback = '';
+        
+        // 计算密码强度分数
+        if (password.length >= 8) score++;
+        if (password.length >= 12) score++;
+        if (/[a-z]/.test(password)) score++;
+        if (/[A-Z]/.test(password)) score++;
+        if (/[0-9]/.test(password)) score++;
+        if (/[^A-Za-z0-9]/.test(password)) score++;
+        
+        // 根据分数设置强度等级
+        if (score <= 2) {
+            strengthFill.className = 'strength-fill strength-weak';
+            feedback = '弱';
+        } else if (score <= 3) {
+            strengthFill.className = 'strength-fill strength-fair';
+            feedback = '一般';
+        } else if (score <= 4) {
+            strengthFill.className = 'strength-fill strength-good';
+            feedback = '良好';
+        } else {
+            strengthFill.className = 'strength-fill strength-strong';
+            feedback = '强';
+        }
+        
+        strengthText.textContent = `密码强度：${feedback}`;
+    }
+
+    // 验证密码要求
+    validatePasswordRequirements() {
+        const password = document.getElementById('newPassword').value;
+        const requirements = [
+            { id: 'req-length', test: password.length >= 8 && password.length <= 20 },
+            { id: 'req-lowercase', test: /[a-z]/.test(password) },
+            { id: 'req-uppercase', test: /[A-Z]/.test(password) },
+            { id: 'req-number', test: /[0-9]/.test(password) },
+            { id: 'req-special', test: /[^A-Za-z0-9]/.test(password) }
+        ];
+        
+        requirements.forEach(req => {
+            const element = document.getElementById(req.id);
+            const icon = element.querySelector('i');
+            
+            if (req.test) {
+                element.classList.remove('invalid');
+                element.classList.add('valid');
+                icon.className = 'fas fa-check';
+            } else {
+                element.classList.remove('valid');
+                element.classList.add('invalid');
+                icon.className = 'fas fa-times';
+            }
+        });
+        
+        return requirements.every(req => req.test);
+    }
+
+    // 验证密码匹配
+    validatePasswordMatch() {
+        const newPassword = document.getElementById('newPassword').value;
+        const confirmPassword = document.getElementById('confirmNewPassword').value;
+        const confirmWrapper = document.getElementById('confirmNewPassword').closest('.input-wrapper');
+        
+        if (confirmPassword && newPassword !== confirmPassword) {
+            confirmWrapper.style.borderColor = '#dc3545';
+            return false;
+        } else if (confirmPassword) {
+            confirmWrapper.style.borderColor = '#28a745';
+            return true;
+        } else {
+            confirmWrapper.style.borderColor = '#e9ecef';
+            return false;
+        }
+    }
+
+    // 更新修改密码按钮状态
+    updateChangePasswordButton() {
+        const currentPassword = document.getElementById('currentPassword').value;
+        const newPassword = document.getElementById('newPassword').value;
+        const confirmPassword = document.getElementById('confirmNewPassword').value;
+        const button = document.getElementById('confirmChangePassword');
+        
+        const passwordValid = this.validatePasswordRequirements();
+        const passwordsMatch = this.validatePasswordMatch();
+        const hasCurrentPassword = currentPassword.length > 0;
+        
+        button.disabled = !(passwordValid && passwordsMatch && hasCurrentPassword);
+    }
+
+    // 重置密码验证状态
+    resetPasswordValidation() {
+        const strengthFill = document.getElementById('strengthFill');
+        const strengthText = document.getElementById('strengthText');
+        
+        strengthFill.className = 'strength-fill';
+        strengthText.textContent = '密码强度：无';
+        
+        // 重置密码要求状态
+        const requirements = ['req-length', 'req-lowercase', 'req-uppercase', 'req-number', 'req-special'];
+        requirements.forEach(reqId => {
+            const element = document.getElementById(reqId);
+            const icon = element.querySelector('i');
+            element.classList.remove('valid', 'invalid');
+            icon.className = 'fas fa-times';
+        });
+        
+        // 重置输入框边框
+        document.querySelectorAll('#changePasswordModal .input-wrapper').forEach(wrapper => {
+            wrapper.style.borderColor = '#e9ecef';
+        });
+        
+        // 禁用确认按钮
+        document.getElementById('confirmChangePassword').disabled = true;
+    }
+
+    // 确认修改密码
+    async confirmChangePassword() {
+        const currentPassword = document.getElementById('currentPassword').value;
+        const newPassword = document.getElementById('newPassword').value;
+        const confirmPassword = document.getElementById('confirmNewPassword').value;
+        
+        // 验证当前密码
+        if (this.currentUser.password !== currentPassword) {
+            this.showNotification('当前密码不正确', 'error');
+            return;
+        }
+        
+        // 验证新密码
+        if (!this.validatePasswordRequirements()) {
+            this.showNotification('新密码不符合要求', 'error');
+            return;
+        }
+        
+        if (newPassword !== confirmPassword) {
+            this.showNotification('两次输入的密码不一致', 'error');
+            return;
+        }
+        
+        if (newPassword === currentPassword) {
+            this.showNotification('新密码不能与当前密码相同', 'error');
+            return;
+        }
+        
+        // 显示加载状态
+        const button = document.getElementById('confirmChangePassword');
+        const originalText = button.innerHTML;
+        button.innerHTML = '<i class="fas fa-spinner fa-spin"></i> 修改中...';
+        button.disabled = true;
+        
+        try {
+            // 模拟修改延迟
+            await this.delay(1500);
+            
+            // 更新用户密码
+            this.currentUser.password = newPassword;
+            this.currentUser.lastPasswordChange = new Date().toISOString();
+            
+            // 保存到localStorage
+            localStorage.setItem('currentUser', JSON.stringify(this.currentUser));
+            
+            // 更新用户数据库中的密码（模拟）
+            const users = JSON.parse(localStorage.getItem('users') || '[]');
+            const userIndex = users.findIndex(u => u.email === this.currentUser.email);
+            if (userIndex !== -1) {
+                users[userIndex].password = newPassword;
+                users[userIndex].lastPasswordChange = new Date().toISOString();
+                localStorage.setItem('users', JSON.stringify(users));
+            }
+            
+            // 关闭模态框
+            this.closePasswordModal();
+            
+            // 显示成功消息
+            this.showSuccessModal('密码修改成功！请妥善保管您的新密码。');
+            
+        } catch (error) {
+            button.innerHTML = originalText;
+            button.disabled = false;
+            this.showNotification('密码修改失败，请稍后重试', 'error');
+        }
+    }
+
+    // 关闭密码修改模态框
+    closePasswordModal() {
+        document.getElementById('changePasswordModal').classList.add('hidden');
+        
+        // 清理事件监听器
+        const newPasswordInput = document.getElementById('newPassword');
+        const confirmPasswordInput = document.getElementById('confirmNewPassword');
+        
+        if (this.handleNewPasswordInput) {
+            newPasswordInput.removeEventListener('input', this.handleNewPasswordInput);
+        }
+        if (this.handleConfirmPasswordInput) {
+            confirmPasswordInput.removeEventListener('input', this.handleConfirmPasswordInput);
+        }
+    }
+
+    // 切换密码可见性
+    togglePasswordVisibility(inputId) {
+        const input = document.getElementById(inputId);
+        const toggleButton = input.nextElementSibling;
+        const icon = toggleButton.querySelector('i');
+        
+        if (input.type === 'password') {
+            input.type = 'text';
+            icon.className = 'fas fa-eye-slash';
+        } else {
+            input.type = 'password';
+            icon.className = 'fas fa-eye';
+        }
     }
 
     // 查看登录记录
@@ -330,8 +601,28 @@ function closeModal() {
     profileManager.closeModal();
 }
 
+function closePasswordModal() {
+    profileManager.closePasswordModal();
+}
+
+function confirmChangePassword() {
+    profileManager.confirmChangePassword();
+}
+
+function togglePasswordVisibility(inputId) {
+    profileManager.togglePasswordVisibility(inputId);
+}
+
 // 初始化
 let profileManager;
 document.addEventListener('DOMContentLoaded', () => {
     profileManager = new ProfileManager();
+    
+    // 为当前密码输入框添加事件监听器
+    const currentPasswordInput = document.getElementById('currentPassword');
+    if (currentPasswordInput) {
+        currentPasswordInput.addEventListener('input', () => {
+            profileManager.updateChangePasswordButton();
+        });
+    }
 });

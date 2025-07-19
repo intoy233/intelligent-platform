@@ -11,7 +11,58 @@ document.addEventListener('DOMContentLoaded', function() {
     loadSavedTheme();
     // 初始化设置系统
     new SettingsSystem();
+    // 更新导航栏按钮状态
+    updateAuthButton();
 });
+
+// 更新认证按钮状态
+function updateAuthButton() {
+    const authBtn = document.getElementById('authBtn');
+    const authBtnText = document.getElementById('authBtnText');
+    const currentUser = getCurrentUserForAuth();
+    
+    if (currentUser) {
+        // 用户已登录，显示退出登录
+        authBtnText.textContent = '退出登录';
+        authBtn.title = '退出登录';
+        authBtn.querySelector('i').className = 'fas fa-sign-out-alt';
+    } else {
+        // 用户未登录，显示登录
+        authBtnText.textContent = '登录';
+        authBtn.title = '用户认证';
+        authBtn.querySelector('i').className = 'fas fa-user';
+    }
+}
+
+// 获取当前用户（用于认证按钮）
+function getCurrentUserForAuth() {
+    const userData = localStorage.getItem('currentUser');
+    return userData ? JSON.parse(userData) : null;
+}
+
+// 处理认证按钮点击
+function handleAuthAction() {
+    const currentUser = getCurrentUserForAuth();
+    
+    if (currentUser) {
+        // 用户已登录，执行退出登录
+        if (confirm('确定要退出登录吗？')) {
+            localStorage.removeItem('currentUser');
+            localStorage.removeItem('isLoggedIn');
+            // 清除所有相关的用户数据
+            Object.keys(localStorage).forEach(key => {
+                if (key.startsWith('profile_') || key.startsWith('user_')) {
+                    localStorage.removeItem(key);
+                }
+            });
+            alert('已成功退出登录');
+            window.location.href = 'auth.html';
+        }
+    } else {
+        // 用户未登录，跳转到登录页面
+        window.location.href = 'auth.html';
+    }
+}
 
 // 设置系统类
 class SettingsSystem {
@@ -72,12 +123,48 @@ class SettingsSystem {
         this.bindEvents();
         this.loadCurrentTheme();
         this.generatePresetAvatars();
+        this.initCozeConfig();
     }
 
     // 获取当前用户
     getCurrentUser() {
         const userData = localStorage.getItem('currentUser');
         return userData ? JSON.parse(userData) : null;
+    }
+
+    // 获取个人资料数据
+    getProfileData() {
+        if (!this.currentUser) return null;
+        const profileData = localStorage.getItem(`profile_${this.currentUser.email}`);
+        return profileData ? JSON.parse(profileData) : null;
+    }
+
+    // 同步头像到个人资料数据
+    syncAvatarToProfile(avatarSrc) {
+        if (!this.currentUser) return;
+        
+        // 获取现有的个人资料数据
+        let profileData = this.getProfileData();
+        
+        // 如果没有个人资料数据，创建一个基础的
+        if (!profileData) {
+            profileData = {
+                nickname: this.currentUser.nickname || this.currentUser.email?.split('@')[0] || '',
+                phone: '',
+                birthday: '',
+                gender: '',
+                bio: '',
+                avatar: avatarSrc,
+                updatedAt: new Date().toISOString()
+            };
+        } else {
+            // 更新头像和时间戳
+            profileData.avatar = avatarSrc;
+            profileData.updatedAt = new Date().toISOString();
+        }
+        
+        // 保存更新后的个人资料数据
+        localStorage.setItem(`profile_${this.currentUser.email}`, JSON.stringify(profileData));
     }
 
     // 加载用户数据
@@ -89,8 +176,18 @@ class SettingsSystem {
             
             if (emailInput) emailInput.value = this.currentUser.email || '';
             if (nicknameInput) nicknameInput.value = this.currentUser.nickname || this.currentUser.email?.split('@')[0] || '';
-            if (avatarImg && this.currentUser.avatar) {
-                avatarImg.src = this.currentUser.avatar;
+            
+            // 优先从个人资料数据中加载头像
+            if (avatarImg) {
+                const profileData = this.getProfileData();
+                if (profileData && profileData.avatar) {
+                    avatarImg.src = profileData.avatar;
+                } else if (this.currentUser.avatar) {
+                    avatarImg.src = this.currentUser.avatar;
+                } else {
+                    // 使用默认头像
+                    avatarImg.src = "data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTAwIiBoZWlnaHQ9IjEwMCIgdmlld0JveD0iMCAwIDEwMCAxMDAiIGZpbGw9Im5vbmUiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+CjxyZWN0IHdpZHRoPSIxMDAiIGhlaWdodD0iMTAwIiByeD0iNTAiIGZpbGw9IiNmMGYwZjAiLz4KPHN2ZyB4PSIyNSIgeT0iMjAiIHdpZHRoPSI1MCIgaGVpZ2h0PSI2MCIgdmlld0JveD0iMCAwIDI0IDI0IiBmaWxsPSIjOTk5Ij4KPHA+dGggZD0iTTEyIDJDMTMuMSAyIDE0IDIuOSAxNCA0QzE0IDUuMSAxMy4xIDYgMTIgNkMxMC45IDYgMTAgNS4xIDEwIDRDMTAgMi45IDEwLjkgMiAxMiAyWk0yMSAxOVYyMEgzVjE5QzMgMTYuMzMgOC4zMyAxNSAxMiAxNUMxNS42NyAxNSAyMSAxNi4zMyAyMSAxOVpNMTIgN0MxNC43NiA3IDE3IDkuMjQgMTcgMTJWMTNIMTlWMTJDMTkgOC4xMyAxNS44NyA1IDEyIDVDOC4xMyA1IDUgOC4xMyA1IDEyVjEzSDdWMTJDNyA5LjI0IDkuMjQgNyAxMiA3WiIvPgo8L3N2Zz4KPC9zdmc+";
+                }
             }
         }
     }
@@ -341,6 +438,9 @@ class SettingsSystem {
         this.currentUser.nickname = nickname;
         if (avatarImg) {
             this.currentUser.avatar = avatarImg.src;
+            
+            // 同步头像到个人资料数据
+            this.syncAvatarToProfile(avatarImg.src);
         }
 
         // 保存主题
@@ -349,6 +449,9 @@ class SettingsSystem {
             localStorage.setItem('selectedTheme', themeName);
             this.applyThemeToSite(themeName);
         }
+
+        // 保存 Coze 配置
+        this.saveCozeConfig();
 
         // 保存用户数据
         localStorage.setItem('currentUser', JSON.stringify(this.currentUser));
@@ -469,5 +572,256 @@ class SettingsSystem {
     }
 }
 
-// 导出类供其他文件使用
+        // 导出类供其他文件使用
 window.SettingsSystem = SettingsSystem;
+
+// Coze 配置相关功能
+function initCozeConfig() {
+    loadCozeConfig();
+    bindCozeEvents();
+    updateCozeStatus();
+}
+
+function loadCozeConfig() {
+    try {
+        const config = JSON.parse(localStorage.getItem('cozeConfig') || '{}');
+        
+        const apiKeyInput = document.getElementById('cozeApiKey');
+        const botIdInput = document.getElementById('cozeBotId');
+        
+        if (apiKeyInput && config.apiKey) {
+            apiKeyInput.value = config.apiKey;
+        }
+        
+        if (botIdInput && config.botId) {
+            botIdInput.value = config.botId;
+        }
+    } catch (error) {
+        console.error('加载 Coze 配置失败:', error);
+    }
+}
+
+function bindCozeEvents() {
+    // 测试连接按钮
+    const testBtn = document.getElementById('testCozeConnection');
+    if (testBtn) {
+        testBtn.addEventListener('click', testCozeConnection);
+    }
+    
+    // 输入框变化时更新状态
+    const apiKeyInput = document.getElementById('cozeApiKey');
+    const botIdInput = document.getElementById('cozeBotId');
+    
+    if (apiKeyInput) {
+        apiKeyInput.addEventListener('input', updateCozeStatus);
+    }
+    
+    if (botIdInput) {
+        botIdInput.addEventListener('input', updateCozeStatus);
+    }
+}
+
+function updateCozeStatus() {
+    const apiKey = document.getElementById('cozeApiKey')?.value.trim();
+    const botId = document.getElementById('cozeBotId')?.value.trim();
+    const statusDot = document.getElementById('cozeStatusDot');
+    const statusText = document.getElementById('cozeStatusText');
+    
+    if (!statusDot || !statusText) return;
+    
+    // 清除所有状态类
+    statusDot.className = 'status-dot';
+    
+    if (!apiKey || !botId) {
+        statusText.textContent = '未配置';
+        return;
+    }
+    
+    // 检查配置是否完整
+    if (apiKey.length > 10 && botId.length > 5) {
+        statusDot.classList.add('connected');
+        statusText.textContent = '配置完整';
+    } else {
+        statusText.textContent = '配置不完整';
+    }
+}
+
+async function testCozeConnection() {
+    const apiKey = document.getElementById('cozeApiKey')?.value.trim();
+    const botId = document.getElementById('cozeBotId')?.value.trim();
+    const statusDot = document.getElementById('cozeStatusDot');
+    const statusText = document.getElementById('cozeStatusText');
+    const testBtn = document.getElementById('testCozeConnection');
+    
+    if (!apiKey || !botId) {
+        showCozeNotification('请先填写 API Key 和 Bot ID', 'error');
+        return;
+    }
+    
+    // 更新状态为连接中
+    if (statusDot) {
+        statusDot.className = 'status-dot connecting';
+    }
+    if (statusText) {
+        statusText.textContent = '连接中...';
+    }
+    if (testBtn) {
+        testBtn.disabled = true;
+        testBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> 测试中...';
+    }
+    
+    try {
+        // 保存配置
+        const config = { apiKey, botId };
+        localStorage.setItem('cozeConfig', JSON.stringify(config));
+        
+        // 模拟连接测试（实际项目中这里应该调用真实的 API）
+        await new Promise(resolve => setTimeout(resolve, 2000));
+        
+        // 连接成功
+        if (statusDot) {
+            statusDot.className = 'status-dot connected';
+        }
+        if (statusText) {
+            statusText.textContent = '连接成功';
+        }
+        
+        showCozeNotification('Coze 连接测试成功！', 'success');
+        
+    } catch (error) {
+        console.error('Coze 连接测试失败:', error);
+        
+        // 连接失败
+        if (statusDot) {
+            statusDot.className = 'status-dot error';
+        }
+        if (statusText) {
+            statusText.textContent = '连接失败';
+        }
+        
+        showCozeNotification('Coze 连接测试失败，请检查配置', 'error');
+    } finally {
+        // 恢复按钮状态
+        if (testBtn) {
+            testBtn.disabled = false;
+            testBtn.innerHTML = '<i class="fas fa-plug"></i> 测试连接';
+        }
+    }
+}
+
+function togglePasswordVisibility(inputId) {
+    const input = document.getElementById(inputId);
+    const button = input?.nextElementSibling;
+    const icon = button?.querySelector('i');
+    
+    if (!input || !icon) return;
+    
+    if (input.type === 'password') {
+        input.type = 'text';
+        icon.className = 'fas fa-eye-slash';
+    } else {
+        input.type = 'password';
+        icon.className = 'fas fa-eye';
+    }
+}
+
+function showCozeNotification(message, type = 'info') {
+    // 创建通知元素
+    const notification = document.createElement('div');
+    notification.className = `coze-notification ${type}`;
+    notification.style.cssText = `
+        position: fixed;
+        top: 100px;
+        right: 20px;
+        background: ${type === 'error' ? '#dc3545' : type === 'success' ? '#28a745' : '#667eea'};
+        color: white;
+        padding: 1rem 1.5rem;
+        border-radius: 10px;
+        box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+        z-index: 10001;
+        transform: translateX(100%);
+        transition: transform 0.3s ease;
+        max-width: 300px;
+        word-wrap: break-word;
+    `;
+    notification.textContent = message;
+
+    document.body.appendChild(notification);
+
+    // 显示动画
+    setTimeout(() => {
+        notification.style.transform = 'translateX(0)';
+    }, 100);
+
+    // 自动隐藏
+    setTimeout(() => {
+        notification.style.transform = 'translateX(100%)';
+        setTimeout(() => {
+            if (document.body.contains(notification)) {
+                document.body.removeChild(notification);
+            }
+        }, 300);
+    }, 4000);
+}
+
+// 在 SettingsSystem 类中添加 Coze 配置方法
+SettingsSystem.prototype.initCozeConfig = function() {
+    this.loadCozeConfig();
+    this.bindCozeEvents();
+    this.updateCozeStatus();
+};
+
+SettingsSystem.prototype.loadCozeConfig = function() {
+    try {
+        const config = JSON.parse(localStorage.getItem('cozeConfig') || '{}');
+        
+        const apiKeyInput = document.getElementById('cozeApiKey');
+        const botIdInput = document.getElementById('cozeBotId');
+        
+        if (apiKeyInput && config.apiKey) {
+            apiKeyInput.value = config.apiKey;
+        }
+        
+        if (botIdInput && config.botId) {
+            botIdInput.value = config.botId;
+        }
+    } catch (error) {
+        console.error('加载 Coze 配置失败:', error);
+    }
+};
+
+SettingsSystem.prototype.bindCozeEvents = function() {
+    // 测试连接按钮
+    const testBtn = document.getElementById('testCozeConnection');
+    if (testBtn) {
+        testBtn.addEventListener('click', testCozeConnection);
+    }
+    
+    // 输入框变化时更新状态
+    const apiKeyInput = document.getElementById('cozeApiKey');
+    const botIdInput = document.getElementById('cozeBotId');
+    
+    if (apiKeyInput) {
+        apiKeyInput.addEventListener('input', updateCozeStatus);
+    }
+    
+    if (botIdInput) {
+        botIdInput.addEventListener('input', updateCozeStatus);
+    }
+};
+
+SettingsSystem.prototype.updateCozeStatus = function() {
+    updateCozeStatus();
+};
+
+SettingsSystem.prototype.saveCozeConfig = function() {
+    const apiKey = document.getElementById('cozeApiKey')?.value.trim();
+    const botId = document.getElementById('cozeBotId')?.value.trim();
+    
+    if (apiKey && botId) {
+        const config = { apiKey, botId };
+        localStorage.setItem('cozeConfig', JSON.stringify(config));
+        return true;
+    }
+    return false;
+};

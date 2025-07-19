@@ -1,0 +1,307 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Coze智能体配置</title>
+    <link rel="stylesheet" href="styles.css">
+    <style>
+        .config-container {
+            max-width: 600px;
+            margin: 50px auto;
+            padding: 30px;
+            background: var(--card-bg);
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+        }
+        
+        .config-header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        
+        .config-header h1 {
+            color: var(--primary-color);
+            margin-bottom: 10px;
+        }
+        
+        .config-form {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+        
+        .form-group {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+        
+        .form-group label {
+            font-weight: 600;
+            color: var(--text-primary);
+        }
+        
+        .form-group input {
+            padding: 12px;
+            border: 2px solid var(--border-color);
+            border-radius: 8px;
+            font-size: 14px;
+            transition: border-color 0.3s ease;
+        }
+        
+        .form-group input:focus {
+            outline: none;
+            border-color: var(--primary-color);
+        }
+        
+        .form-group .help-text {
+            font-size: 12px;
+            color: var(--text-secondary);
+            margin-top: 4px;
+        }
+        
+        .config-buttons {
+            display: flex;
+            gap: 15px;
+            margin-top: 20px;
+        }
+        
+        .config-btn {
+            flex: 1;
+            padding: 12px 24px;
+            border: none;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        
+        .config-btn.primary {
+            background: var(--primary-color);
+            color: white;
+        }
+        
+        .config-btn.primary:hover {
+            background: var(--primary-hover);
+        }
+        
+        .config-btn.secondary {
+            background: var(--border-color);
+            color: var(--text-primary);
+        }
+        
+        .config-btn.secondary:hover {
+            background: var(--text-secondary);
+            color: white;
+        }
+        
+        .status-indicator {
+            padding: 10px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            text-align: center;
+            font-weight: 500;
+        }
+        
+        .status-indicator.success {
+            background-color: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+        
+        .status-indicator.error {
+            background-color: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+        
+        .status-indicator.warning {
+            background-color: #fff3cd;
+            color: #856404;
+            border: 1px solid #ffeaa7;
+        }
+        
+        .guide-section {
+            margin-top: 30px;
+            padding: 20px;
+            background: var(--bg-secondary);
+            border-radius: 10px;
+        }
+        
+        .guide-section h3 {
+            color: var(--primary-color);
+            margin-bottom: 15px;
+        }
+        
+        .guide-section ol {
+            padding-left: 20px;
+        }
+        
+        .guide-section li {
+            margin-bottom: 8px;
+            line-height: 1.5;
+        }
+    </style>
+</head>
+<body>
+    <div class="config-container">
+        <div class="config-header">
+            <h1>🤖 Coze智能体配置</h1>
+            <p>配置您的Coze API密钥和机器人ID以启用智能对话功能</p>
+        </div>
+        
+        <div id="statusIndicator" class="status-indicator" style="display: none;"></div>
+        
+        <form class="config-form" id="configForm">
+            <div class="form-group">
+                <label for="apiKey">API Key</label>
+                <input type="password" id="apiKey" placeholder="请输入您的Coze API Key">
+                <div class="help-text">
+                    您可以在Coze开放平台获取API Key
+                </div>
+            </div>
+            
+            <div class="form-group">
+                <label for="botId">Bot ID</label>
+                <input type="text" id="botId" placeholder="请输入您的Bot ID">
+                <div class="help-text">
+                    在Coze平台创建机器人后可获得Bot ID
+                </div>
+            </div>
+            
+            <div class="config-buttons">
+                <button type="button" class="config-btn secondary" onclick="testConnection()">测试连接</button>
+                <button type="submit" class="config-btn primary">保存配置</button>
+            </div>
+        </form>
+        
+        <div class="guide-section">
+            <h3>📋 配置指南</h3>
+            <ol>
+                <li>访问 <a href="https://www.coze.cn/" target="_blank">Coze开放平台</a></li>
+                <li>注册并登录您的账户</li>
+                <li>创建一个新的机器人或选择现有机器人</li>
+                <li>在机器人设置中获取Bot ID</li>
+                <li>在开发者设置中生成API Key</li>
+                <li>将API Key和Bot ID填入上方表单</li>
+                <li>点击"测试连接"验证配置</li>
+                <li>保存配置并返回首页开始对话</li>
+            </ol>
+        </div>
+    </div>
+    
+    <script src="coze-config.js"></script>
+    <script src="coze-client.js"></script>
+    <script>
+        // 页面加载时读取现有配置
+        document.addEventListener('DOMContentLoaded', function() {
+            loadExistingConfig();
+            updateStatus();
+        });
+        
+        // 加载现有配置
+        function loadExistingConfig() {
+            const savedConfig = localStorage.getItem('cozeConfig');
+            if (savedConfig) {
+                try {
+                    const config = JSON.parse(savedConfig);
+                    document.getElementById('apiKey').value = config.apiKey || '';
+                    document.getElementById('botId').value = config.botId || '';
+                } catch (error) {
+                    console.error('加载配置失败:', error);
+                }
+            }
+        }
+        
+        // 更新状态显示
+        function updateStatus() {
+            const statusDiv = document.getElementById('statusIndicator');
+            const config = window.cozeConfig.getConfigStatus();
+            
+            statusDiv.style.display = 'block';
+            statusDiv.className = 'status-indicator';
+            
+            if (config.valid) {
+                statusDiv.classList.add('success');
+                statusDiv.textContent = '✅ 配置完成，可以使用Coze智能体';
+            } else {
+                statusDiv.classList.add('warning');
+                statusDiv.textContent = '⚠️ ' + config.message;
+            }
+        }
+        
+        // 保存配置
+        document.getElementById('configForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            const apiKey = document.getElementById('apiKey').value.trim();
+            const botId = document.getElementById('botId').value.trim();
+            
+            if (!apiKey || !botId) {
+                showStatus('请填写完整的API Key和Bot ID', 'error');
+                return;
+            }
+            
+            // 保存到localStorage
+            const config = { apiKey, botId };
+            localStorage.setItem('cozeConfig', JSON.stringify(config));
+            
+            // 更新全局配置
+            window.cozeConfig.apiKey = apiKey;
+            window.cozeConfig.botId = botId;
+            window.cozeConfig.requestConfig.headers['Authorization'] = `Bearer ${apiKey}`;
+            
+            showStatus('配置已保存！', 'success');
+            updateStatus();
+            
+            // 3秒后跳转到首页
+            setTimeout(() => {
+                window.location.href = 'index.html';
+            }, 3000);
+        });
+        
+        // 测试连接
+        async function testConnection() {
+            const apiKey = document.getElementById('apiKey').value.trim();
+            const botId = document.getElementById('botId').value.trim();
+            
+            if (!apiKey || !botId) {
+                showStatus('请先填写API Key和Bot ID', 'error');
+                return;
+            }
+            
+            showStatus('正在测试连接...', 'warning');
+            
+            try {
+                // 临时更新配置
+                const tempConfig = { ...window.cozeConfig };
+                tempConfig.apiKey = apiKey;
+                tempConfig.botId = botId;
+                tempConfig.requestConfig.headers['Authorization'] = `Bearer ${apiKey}`;
+                
+                // 创建临时客户端
+                const tempClient = new CozeClient();
+                tempClient.config = tempConfig;
+                
+                // 测试连接
+                await tempClient.testConnection();
+                showStatus('✅ 连接测试成功！', 'success');
+                
+            } catch (error) {
+                console.error('连接测试失败:', error);
+                showStatus('❌ 连接测试失败: ' + error.message, 'error');
+            }
+        }
+        
+        // 显示状态消息
+        function showStatus(message, type) {
+            const statusDiv = document.getElementById('statusIndicator');
+            statusDiv.style.display = 'block';
+            statusDiv.className = 'status-indicator ' + type;
+            statusDiv.textContent = message;
+        }
+    </script>
+</body>
+</html>
