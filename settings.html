@@ -1,0 +1,213 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>个性化设置 - 智能交互平台</title>
+    <link rel="stylesheet" href="styles.css">
+    <link rel="stylesheet" href="settings.css">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <!-- Supabase 客户端 -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="supabase-config.js"></script>
+    <script src="supabase-client.js"></script>
+</head>
+<body>
+    <!-- 导航栏 -->
+    <nav class="navbar">
+        <div class="nav-container">
+            <div class="nav-logo">
+                <h2><a href="index.html" style="text-decoration: none; color: inherit;">智能平台</a></h2>
+            </div>
+            <div class="nav-buttons">
+                <button class="nav-btn" onclick="window.location.href='auth.html'" title="用户认证">
+                    <i class="fas fa-user"></i>
+                    <span>登录</span>
+                </button>
+                <button class="nav-btn" onclick="window.location.href='index.html'">
+                    <i class="fas fa-home"></i>
+                    <span>返回首页</span>
+                </button>
+            </div>
+        </div>
+    </nav>
+
+    <!-- 设置容器 -->
+    <div class="settings-container">
+        <div class="settings-wrapper">
+            <div class="settings-header">
+                <h1><i class="fas fa-cog"></i> 个人设置</h1>
+                <p>自定义您的个人资料和偏好设置</p>
+            </div>
+
+            <!-- 个人资料设置 -->
+            <div class="settings-section">
+                <div class="section-header">
+                    <h2><i class="fas fa-user"></i> 个人资料</h2>
+                </div>
+                
+                <div class="profile-settings">
+                    <!-- 头像设置 -->
+                    <div class="avatar-section">
+                        <div class="avatar-preview">
+                            <div class="avatar-container">
+                                <img id="avatarImg" src="https://api.dicebear.com/7.x/avataaars/svg?seed=default&backgroundColor=b6e3f4" alt="用户头像" class="avatar-img">
+                                <div class="avatar-overlay">
+                                    <i class="fas fa-camera"></i>
+                                    <span>更换头像</span>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="avatar-controls">
+                            <input type="file" id="avatarInput" accept="image/*" style="display: none;">
+                            <button class="settings-btn primary" id="uploadBtn">
+                                <i class="fas fa-upload"></i>
+                                上传头像
+                            </button>
+                            <button class="settings-btn secondary" onclick="resetAvatar()">
+                                <i class="fas fa-undo"></i>
+                                重置默认
+                            </button>
+                        </div>
+                        
+                        <div class="avatar-presets">
+                            <h4>预设头像</h4>
+                            <div class="preset-avatars">
+                                <div class="preset-avatar" onclick="selectPresetAvatar('avatar1')">
+                                    <img src="data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNjAiIGhlaWdodD0iNjAiIHZpZXdCb3g9IjAgMCA2MCA2MCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPHJlY3Qgd2lkdGg9IjYwIiBoZWlnaHQ9IjYwIiByeD0iMzAiIGZpbGw9IiNmZjZiNmIiLz4KPHN2ZyB4PSIxNSIgeT0iMTIiIHdpZHRoPSIzMCIgaGVpZ2h0PSIzNiIgdmlld0JveD0iMCAwIDI0IDI0IiBmaWxsPSJ3aGl0ZSI+CjxwYXRoIGQ9Ik0xMiAyQzEzLjEgMiAxNCAyLjkgMTQgNEMxNCA1LjEgMTMuMSA2IDEyIDZDMTAuOSA2IDEwIDUuMSAxMCA0QzEwIDIuOSAxMC45IDIgMTIgMlpNMjEgOVYyMkgxNVYxNi41SDlWMjJIM1Y5QzMgOCA0IDcgNSA3SDE5QzIwIDcgMjEgOCAyMSA5WiIvPgo8L3N2Zz4KPC9zdmc+" alt="头像1">
+                                </div>
+                                <div class="preset-avatar" onclick="selectPresetAvatar('avatar2')">
+                                    <img src="data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNjAiIGhlaWdodD0iNjAiIHZpZXdCb3g9IjAgMCA2MCA2MCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPHJlY3Qgd2lkdGg9IjYwIiBoZWlnaHQ9IjYwIiByeD0iMzAiIGZpbGw9IiM0ZWNkYzQiLz4KPHN2ZyB4PSIxNSIgeT0iMTIiIHdpZHRoPSIzMCIgaGVpZ2h0PSIzNiIgdmlld0JveD0iMCAwIDI0IDI0IiBmaWxsPSJ3aGl0ZSI+CjxwYXRoIGQ9Ik0xMiAyQzEzLjEgMiAxNCAyLjkgMTQgNEMxNCA1LjEgMTMuMSA2IDEyIDZDMTAuOSA2IDEwIDUuMSAxMCA0QzEwIDIuOSAxMC45IDIgMTIgMlpNMjEgOVYyMkgxNVYxNi41SDlWMjJIM1Y5QzMgOCA0IDcgNSA3SDE5QzIwIDcgMjEgOCAyMSA5WiIvPgo8L3N2Zz4KPC9zdmc+" alt="头像2">
+                                </div>
+                                <div class="preset-avatar" onclick="selectPresetAvatar('avatar3')">
+                                    <img src="data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNjAiIGhlaWdodD0iNjAiIHZpZXdCb3g9IjAgMCA2MCA2MCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPHJlY3Qgd2lkdGg9IjYwIiBoZWlnaHQ9IjYwIiByeD0iMzAiIGZpbGw9IiNmZWNhNTciLz4KPHN2ZyB4PSIxNSIgeT0iMTIiIHdpZHRoPSIzMCIgaGVpZ2h0PSIzNiIgdmlld0JveD0iMCAwIDI0IDI0IiBmaWxsPSJ3aGl0ZSI+CjxwYXRoIGQ9Ik0xMiAyQzEzLjEgMiAxNCAyLjkgMTQgNEMxNCA1LjEgMTMuMSA2IDEyIDZDMTAuOSA2IDEwIDUuMSAxMCA0QzEwIDIuOSAxMC45IDIgMTIgMlpNMjEgOVYyMkgxNVYxNi41SDlWMjJIM1Y5QzMgOCA0IDcgNSA3SDE5QzIwIDcgMjEgOCAyMSA5WiIvPgo8L3N2Zz4KPC9zdmc+" alt="头像3">
+                                </div>
+                                <div class="preset-avatar" onclick="selectPresetAvatar('avatar4')">
+                                    <img src="data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNjAiIGhlaWdodD0iNjAiIHZpZXdCb3g9IjAgMCA2MCA2MCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPHJlY3Qgd2lkdGg9IjYwIiBoZWlnaHQ9IjYwIiByeD0iMzAiIGZpbGw9IiM5NmNlYjQiLz4KPHN2ZyB4PSIxNSIgeT0iMTIiIHdpZHRoPSIzMCIgaGVpZ2h0PSIzNiIgdmlld0JveD0iMCAwIDI0IDI0IiBmaWxsPSJ3aGl0ZSI+CjxwYXRoIGQ9Ik0xMiAyQzEzLjEgMiAxNCAyLjkgMTQgNEMxNCA1LjEgMTMuMSA2IDEyIDZDMTAuOSA2IDEwIDUuMSAxMCA0QzEwIDIuOSAxMC45IDIgMTIgMlpNMjEgOVYyMkgxNVYxNi41SDlWMjJIM1Y5QzMgOCA0IDcgNSA3SDE5QzIwIDcgMjEgOCAyMSA5WiIvPgo8L3N2Zz4KPC9zdmc+" alt="头像4">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- 用户信息 -->
+                    <div class="user-info">
+                        <div class="input-group">
+                            <label for="userEmail">邮箱地址</label>
+                            <div class="input-wrapper">
+                                <i class="fas fa-envelope"></i>
+                                <input type="email" id="userEmail" readonly>
+                            </div>
+                        </div>
+                        
+                        <div class="input-group">
+                            <label for="userNickname">用户昵称</label>
+                            <div class="input-wrapper">
+                                <i class="fas fa-user"></i>
+                                <input type="text" id="userNickname" placeholder="请输入您的昵称">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 主题设置 -->
+            <div class="settings-section">
+                <div class="section-header">
+                    <h2><i class="fas fa-palette"></i> 主题设置</h2>
+                </div>
+                
+                <div class="theme-settings">
+                    <div class="theme-grid">
+                        <div class="theme-option" data-theme="light" onclick="selectTheme('light')">
+                            <div class="theme-preview light-theme">
+                                <div class="theme-header"></div>
+                                <div class="theme-content">
+                                    <div class="theme-sidebar"></div>
+                                    <div class="theme-main"></div>
+                                </div>
+                            </div>
+                            <div class="theme-info">
+                                <h4><i class="fas fa-sun"></i> 浅色主题</h4>
+                                <p>清新明亮的白色主题</p>
+                            </div>
+                        </div>
+                        
+                        <div class="theme-option" data-theme="dark" onclick="selectTheme('dark')">
+                            <div class="theme-preview dark-theme">
+                                <div class="theme-header"></div>
+                                <div class="theme-content">
+                                    <div class="theme-sidebar"></div>
+                                    <div class="theme-main"></div>
+                                </div>
+                            </div>
+                            <div class="theme-info">
+                                <h4><i class="fas fa-moon"></i> 深色主题</h4>
+                                <p>护眼舒适的黑色主题</p>
+                            </div>
+                        </div>
+                        
+                        <div class="theme-option" data-theme="blue" onclick="selectTheme('blue')">
+                            <div class="theme-preview blue-theme">
+                                <div class="theme-header"></div>
+                                <div class="theme-content">
+                                    <div class="theme-sidebar"></div>
+                                    <div class="theme-main"></div>
+                                </div>
+                            </div>
+                            <div class="theme-info">
+                                <h4><i class="fas fa-water"></i> 蓝色主题</h4>
+                                <p>专业稳重的蓝色主题</p>
+                            </div>
+                        </div>
+                        
+                        <div class="theme-option" data-theme="pink" onclick="selectTheme('pink')">
+                            <div class="theme-preview pink-theme">
+                                <div class="theme-header"></div>
+                                <div class="theme-content">
+                                    <div class="theme-sidebar"></div>
+                                    <div class="theme-main"></div>
+                                </div>
+                            </div>
+                            <div class="theme-info">
+                                <h4><i class="fas fa-heart"></i> 粉色主题</h4>
+                                <p>温馨可爱的粉色主题</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 保存按钮 -->
+            <div class="settings-actions">
+                <button class="settings-btn secondary" id="resetSettings">
+                    <i class="fas fa-undo"></i>
+                    重置设置
+                </button>
+                <button class="settings-btn primary" id="saveSettings">
+                    <i class="fas fa-save"></i>
+                    保存设置
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 成功提示模态框 -->
+    <div class="modal hidden" id="successModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <i class="fas fa-check-circle success-icon"></i>
+                <h3>设置保存成功</h3>
+            </div>
+            <div class="modal-body">
+                <p id="successMessage">您的设置已成功保存！</p>
+            </div>
+            <div class="modal-footer">
+                <button class="modal-btn primary" id="closeModal">确定</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="settings.js"></script>
+</body>
+</html>

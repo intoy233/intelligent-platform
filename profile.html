@@ -1,0 +1,193 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>个人信息 - 智能交互平台</title>
+    <link rel="stylesheet" href="styles.css">
+    <link rel="stylesheet" href="profile.css">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+</head>
+<body>
+    <!-- 导航栏 -->
+    <nav class="navbar">
+        <div class="nav-container">
+            <div class="nav-logo">
+                <h2>智能平台</h2>
+            </div>
+            
+            <div class="nav-buttons">
+                <button class="nav-btn" onclick="window.location.href='settings.html'" title="系统设置">
+                    <i class="fas fa-cog"></i>
+                    <span>设置</span>
+                </button>
+                <button class="nav-btn" onclick="window.location.href='index.html'">
+                    <i class="fas fa-home"></i>
+                    <span>首页</span>
+                </button>
+            </div>
+        </div>
+    </nav>
+
+    <!-- 主要内容区域 -->
+    <main class="main-content">
+        <div class="profile-container">
+            <div class="profile-header">
+                <h1><i class="fas fa-user-edit"></i> 个人信息</h1>
+                <p>管理您的个人资料和账户信息</p>
+            </div>
+
+            <div class="profile-content">
+                <!-- 头像设置区域 -->
+                <div class="profile-section">
+                    <h2><i class="fas fa-image"></i> 头像设置</h2>
+                    <div class="avatar-section">
+                        <div class="avatar-preview">
+                            <img id="avatarPreview" src="data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTAwIiBoZWlnaHQ9IjEwMCIgdmlld0JveD0iMCAwIDEwMCAxMDAiIGZpbGw9Im5vbmUiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+CjxyZWN0IHdpZHRoPSIxMDAiIGhlaWdodD0iMTAwIiByeD0iNTAiIGZpbGw9IiNmMGYwZjAiLz4KPHN2ZyB4PSIyNSIgeT0iMjAiIHdpZHRoPSI1MCIgaGVpZ2h0PSI2MCIgdmlld0JveD0iMCAwIDI0IDI0IiBmaWxsPSIjOTk5Ij4KPHA+dGggZD0iTTEyIDJDMTMuMSAyIDE0IDIuOSAxNCA0QzE0IDUuMSAxMy4xIDYgMTIgNkMxMC45IDYgMTAgNS4xIDEwIDRDMTAgMi45IDEwLjkgMiAxMiAyWk0yMSAxOVYyMEgzVjE5QzMgMTYuMzMgOC4zMyAxNSAxMiAxNUMxNS42NyAxNSAyMSAxNi4zMyAyMSAxOVpNMTIgN0MxNC43NiA3IDE3IDkuMjQgMTcgMTJWMTNIMTlWMTJDMTkgOC4xMyAxNS44NyA1IDEyIDVDOC4xMyA1IDUgOC4xMyA1IDEyVjEzSDdWMTJDNyA5LjI0IDkuMjQgNyAxMiA3WiIvPgo8L3N2Zz4KPC9zdmc+" alt="默认头像">
+                            <div class="avatar-overlay">
+                                <i class="fas fa-camera"></i>
+                                <span>点击更换</span>
+                            </div>
+                        </div>
+                        <div class="avatar-controls">
+                            <input type="file" id="avatarInput" accept="image/*" style="display: none;">
+                            <button class="profile-btn primary" onclick="document.getElementById('avatarInput').click()">
+                                <i class="fas fa-upload"></i>
+                                上传头像
+                            </button>
+                            <button class="profile-btn secondary" onclick="resetAvatar()">
+                                <i class="fas fa-undo"></i>
+                                重置默认
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 基本信息设置 -->
+                <div class="profile-section">
+                    <h2><i class="fas fa-user"></i> 基本信息</h2>
+                    <div class="form-grid">
+                        <div class="input-group">
+                            <label for="nickname">昵称</label>
+                            <div class="input-wrapper">
+                                <i class="fas fa-user"></i>
+                                <input type="text" id="nickname" placeholder="请输入昵称" value="用户">
+                            </div>
+                        </div>
+
+                        <div class="input-group">
+                            <label for="email">邮箱地址</label>
+                            <div class="input-wrapper">
+                                <i class="fas fa-envelope"></i>
+                                <input type="email" id="email" placeholder="邮箱地址" readonly>
+                            </div>
+                            <small class="input-hint">邮箱地址不可修改</small>
+                        </div>
+
+                        <div class="input-group">
+                            <label for="phone">手机号码</label>
+                            <div class="input-wrapper">
+                                <i class="fas fa-phone"></i>
+                                <input type="tel" id="phone" placeholder="请输入手机号码">
+                            </div>
+                        </div>
+
+                        <div class="input-group">
+                            <label for="birthday">生日</label>
+                            <div class="input-wrapper">
+                                <i class="fas fa-calendar"></i>
+                                <input type="date" id="birthday">
+                            </div>
+                        </div>
+
+                        <div class="input-group">
+                            <label for="gender">性别</label>
+                            <div class="input-wrapper">
+                                <i class="fas fa-venus-mars"></i>
+                                <select id="gender">
+                                    <option value="">请选择性别</option>
+                                    <option value="male">男</option>
+                                    <option value="female">女</option>
+                                    <option value="other">其他</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <div class="input-group full-width">
+                            <label for="bio">个人简介</label>
+                            <div class="input-wrapper">
+                                <i class="fas fa-edit"></i>
+                                <textarea id="bio" placeholder="介绍一下自己吧..." rows="4"></textarea>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 账户安全 -->
+                <div class="profile-section">
+                    <h2><i class="fas fa-shield-alt"></i> 账户安全</h2>
+                    <div class="security-items">
+                        <div class="security-item">
+                            <div class="security-info">
+                                <i class="fas fa-key"></i>
+                                <div>
+                                    <h3>修改密码</h3>
+                                    <p>定期更换密码，保护账户安全</p>
+                                </div>
+                            </div>
+                            <button class="profile-btn secondary" onclick="changePassword()">
+                                <i class="fas fa-edit"></i>
+                                修改
+                            </button>
+                        </div>
+
+                        <div class="security-item">
+                            <div class="security-info">
+                                <i class="fas fa-clock"></i>
+                                <div>
+                                    <h3>登录记录</h3>
+                                    <p>查看最近的登录活动</p>
+                                </div>
+                            </div>
+                            <button class="profile-btn secondary" onclick="viewLoginHistory()">
+                                <i class="fas fa-eye"></i>
+                                查看
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 操作按钮 -->
+                <div class="profile-actions">
+                    <button class="profile-btn secondary" onclick="window.location.href='index.html'">
+                        <i class="fas fa-arrow-left"></i>
+                        返回首页
+                    </button>
+                    <button class="profile-btn primary" id="saveProfile">
+                        <i class="fas fa-save"></i>
+                        保存更改
+                    </button>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- 成功提示模态框 -->
+    <div class="modal hidden" id="successModal">
+        <div class="modal-content">
+            <div class="modal-header success">
+                <i class="fas fa-check-circle"></i>
+                <h3>保存成功</h3>
+            </div>
+            <div class="modal-body">
+                <p id="successMessage">您的个人信息已成功保存！</p>
+            </div>
+            <div class="modal-footer">
+                <button class="profile-btn primary" onclick="closeModal()">确定</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="profile.js"></script>
+</body>
+</html>

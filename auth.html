@@ -1,0 +1,364 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>用户认证 - 智能交互平台</title>
+    <link rel="stylesheet" href="styles.css">
+    <link rel="stylesheet" href="auth.css">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
+    <!-- Supabase 客户端 -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="supabase-config.js"></script>
+    <script src="supabase-client.js"></script>
+</head>
+<body>
+    <!-- 导航栏 -->
+    <nav class="navbar">
+        <div class="nav-container">
+            <div class="nav-logo">
+                <h2><a href="index.html" style="text-decoration: none; color: inherit;">智能平台</a></h2>
+            </div>
+            <div class="nav-buttons">
+                <button class="nav-btn" onclick="window.location.href='settings.html'" title="个性化设置">
+                    <i class="fas fa-cog"></i>
+                    <span>设置</span>
+                </button>
+                <button class="nav-btn" onclick="window.location.href='index.html'">
+                    <i class="fas fa-home"></i>
+                    <span>返回首页</span>
+                </button>
+            </div>
+        </div>
+    </nav>
+
+    <!-- 认证容器 -->
+    <div class="auth-container">
+        <div class="auth-wrapper">
+            <!-- 登录表单 -->
+            <div class="auth-form" id="loginForm">
+                <div class="form-header">
+                    <h2><i class="fas fa-sign-in-alt"></i> 用户登录</h2>
+                    <p>欢迎回来，请登录您的账户</p>
+                </div>
+                
+                <form id="loginFormElement">
+                    <div class="input-group">
+                        <label for="loginEmail">邮箱地址</label>
+                        <div class="input-wrapper">
+                            <i class="fas fa-envelope"></i>
+                            <input type="email" id="loginEmail" placeholder="请输入您的邮箱" required>
+                        </div>
+                    </div>
+                    
+                    <div class="input-group">
+                        <label for="loginPassword">登录密码</label>
+                        <div class="input-wrapper">
+                            <i class="fas fa-lock"></i>
+                            <input type="password" id="loginPassword" placeholder="请输入您的密码" required>
+                            <button type="button" class="password-toggle" onclick="togglePasswordVisibility('loginPassword')">
+                                <i class="fas fa-eye"></i>
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <button type="submit" class="auth-btn primary">
+                        <i class="fas fa-sign-in-alt"></i>
+                        登录
+                    </button>
+                </form>
+                
+                <div class="form-footer">
+                    <p>还没有账户？ <a href="#" onclick="switchToRegister()">立即注册</a></p>
+                    <p><a href="#" onclick="switchToForgotPassword()">忘记密码？</a></p>
+                </div>
+            </div>
+
+            <!-- 注册表单 -->
+            <div class="auth-form hidden" id="registerForm">
+                <div class="form-header">
+                    <h2><i class="fas fa-user-plus"></i> 用户注册</h2>
+                    <p>创建您的账户，开始使用我们的服务</p>
+                </div>
+                
+                <form id="registerFormElement">
+                    <div class="input-group">
+                        <label for="registerEmail">邮箱地址</label>
+                        <div class="input-wrapper">
+                            <i class="fas fa-envelope"></i>
+                            <input type="email" id="registerEmail" placeholder="请输入您的邮箱" required>
+                        </div>
+                    </div>
+                    
+                    <div class="input-group">
+                        <label for="captcha">图形验证码</label>
+                        <div class="captcha-container">
+                            <div class="input-wrapper captcha-input">
+                                <i class="fas fa-shield-alt"></i>
+                                <input type="text" id="captcha" placeholder="请输入验证码" required>
+                            </div>
+                            <div class="captcha-display" id="captchaDisplay" onclick="generateCaptcha()">
+                                <span id="captchaText">点击生成</span>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <button type="submit" class="auth-btn primary">
+                        <i class="fas fa-paper-plane"></i>
+                        发送验证码
+                    </button>
+                </form>
+                
+                <!-- 验证码输入阶段 -->
+                <div class="verification-stage hidden" id="verificationStage">
+                    <div class="verification-info">
+                        <i class="fas fa-envelope-open-text"></i>
+                        <h3>验证码已发送</h3>
+                        <p>我们已向 <span id="emailDisplay"></span> 发送了6位数字验证码</p>
+                        <p class="countdown">验证码有效期：<span id="countdown">300</span>秒</p>
+                    </div>
+                    
+                    <div class="verification-input">
+                        <div class="code-inputs">
+                            <input type="text" class="code-digit" maxlength="1" data-index="0">
+                            <input type="text" class="code-digit" maxlength="1" data-index="1">
+                            <input type="text" class="code-digit" maxlength="1" data-index="2">
+                            <input type="text" class="code-digit" maxlength="1" data-index="3">
+                            <input type="text" class="code-digit" maxlength="1" data-index="4">
+                            <input type="text" class="code-digit" maxlength="1" data-index="5">
+                        </div>
+                        
+                        <div class="verification-actions">
+                            <button type="button" class="auth-btn secondary" id="resendCode">
+                                <i class="fas fa-redo"></i>
+                                重新发送
+                            </button>
+                            <button type="button" class="auth-btn primary" id="verifyCode">
+                                <i class="fas fa-check"></i>
+                                验证验证码
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- 密码设置阶段 -->
+                <div class="password-stage hidden" id="passwordStage">
+                    <div class="password-info">
+                        <i class="fas fa-lock"></i>
+                        <h3>设置登录密码</h3>
+                        <p>请为您的账户设置一个安全的登录密码</p>
+                    </div>
+                    
+                    <div class="password-input">
+                        <div class="input-group">
+                            <label for="newPassword">登录密码</label>
+                            <div class="input-wrapper">
+                                <i class="fas fa-lock"></i>
+                                <input type="password" id="newPassword" placeholder="请输入密码（8-20位）" required>
+                                <button type="button" class="password-toggle" onclick="togglePasswordVisibility('newPassword')">
+                                    <i class="fas fa-eye"></i>
+                                </button>
+                            </div>
+                            <div class="password-strength">
+                                <div class="strength-bar">
+                                    <div class="strength-fill" id="strengthFill"></div>
+                                </div>
+                                <span class="strength-text" id="strengthText">密码强度：弱</span>
+                            </div>
+                        </div>
+                        
+                        <div class="input-group">
+                            <label for="confirmPassword">确认密码</label>
+                            <div class="input-wrapper">
+                                <i class="fas fa-lock"></i>
+                                <input type="password" id="confirmPassword" placeholder="请再次输入密码" required>
+                                <button type="button" class="password-toggle" onclick="togglePasswordVisibility('confirmPassword')">
+                                    <i class="fas fa-eye"></i>
+                                </button>
+                            </div>
+                        </div>
+                        
+                        <div class="password-requirements">
+                            <h4>密码要求：</h4>
+                            <ul>
+                                <li id="req-length"><i class="fas fa-times"></i> 8-20个字符</li>
+                                <li id="req-uppercase"><i class="fas fa-times"></i> 包含大写字母</li>
+                                <li id="req-lowercase"><i class="fas fa-times"></i> 包含小写字母</li>
+                                <li id="req-number"><i class="fas fa-times"></i> 包含数字</li>
+                                <li id="req-special"><i class="fas fa-times"></i> 包含特殊字符</li>
+                            </ul>
+                        </div>
+                        
+                        <div class="password-actions">
+                            <button type="button" class="auth-btn secondary" onclick="backToVerification()">
+                                <i class="fas fa-arrow-left"></i>
+                                返回验证
+                            </button>
+                            <button type="button" class="auth-btn primary" id="completeRegistration">
+                                <i class="fas fa-user-check"></i>
+                                完成注册
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="form-footer">
+                    <p>已有账户？ <a href="#" onclick="switchToLogin()">立即登录</a></p>
+                </div>
+            </div>
+
+            <!-- 找回密码表单 -->
+            <div class="auth-form hidden" id="forgotPasswordForm">
+                <div class="form-header">
+                    <h2><i class="fas fa-key"></i> 找回密码</h2>
+                    <p>请输入您的邮箱地址，我们将发送重置密码的验证码</p>
+                </div>
+                
+                <form id="forgotPasswordFormElement">
+                    <div class="input-group">
+                        <label for="forgotEmail">邮箱地址</label>
+                        <div class="input-wrapper">
+                            <i class="fas fa-envelope"></i>
+                            <input type="email" id="forgotEmail" placeholder="请输入您的注册邮箱" required>
+                        </div>
+                    </div>
+                    
+                    <div class="input-group">
+                        <label for="forgotCaptcha">图形验证码</label>
+                        <div class="captcha-container">
+                            <div class="input-wrapper captcha-input">
+                                <i class="fas fa-shield-alt"></i>
+                                <input type="text" id="forgotCaptcha" placeholder="请输入验证码" required>
+                            </div>
+                            <div class="captcha-display" id="forgotCaptchaDisplay" onclick="generateForgotCaptcha()">
+                                <span id="forgotCaptchaText">点击生成</span>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <button type="submit" class="auth-btn primary">
+                        <i class="fas fa-paper-plane"></i>
+                        发送重置验证码
+                    </button>
+                </form>
+                
+                <!-- 重置验证码输入阶段 -->
+                <div class="verification-stage hidden" id="resetVerificationStage">
+                    <div class="verification-info">
+                        <i class="fas fa-envelope-open-text"></i>
+                        <h3>重置验证码已发送</h3>
+                        <p>我们已向 <span id="resetEmailDisplay"></span> 发送了6位数字验证码</p>
+                        <p class="countdown">验证码有效期：<span id="resetCountdown">300</span>秒</p>
+                    </div>
+                    
+                    <div class="verification-input">
+                        <div class="code-inputs">
+                            <input type="text" class="reset-code-digit" maxlength="1" data-index="0">
+                            <input type="text" class="reset-code-digit" maxlength="1" data-index="1">
+                            <input type="text" class="reset-code-digit" maxlength="1" data-index="2">
+                            <input type="text" class="reset-code-digit" maxlength="1" data-index="3">
+                            <input type="text" class="reset-code-digit" maxlength="1" data-index="4">
+                            <input type="text" class="reset-code-digit" maxlength="1" data-index="5">
+                        </div>
+                        
+                        <div class="verification-actions">
+                            <button type="button" class="auth-btn secondary" id="resendResetCode">
+                                <i class="fas fa-redo"></i>
+                                重新发送
+                            </button>
+                            <button type="button" class="auth-btn primary" id="verifyResetCode">
+                                <i class="fas fa-check"></i>
+                                验证验证码
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- 重置密码阶段 -->
+                <div class="password-stage hidden" id="resetPasswordStage">
+                    <div class="password-info">
+                        <i class="fas fa-lock"></i>
+                        <h3>重置登录密码</h3>
+                        <p>请为您的账户设置一个新的安全密码</p>
+                    </div>
+                    
+                    <div class="password-input">
+                        <div class="input-group">
+                            <label for="resetNewPassword">新密码</label>
+                            <div class="input-wrapper">
+                                <i class="fas fa-lock"></i>
+                                <input type="password" id="resetNewPassword" placeholder="请输入新密码（8-20位）" required>
+                                <button type="button" class="password-toggle" onclick="togglePasswordVisibility('resetNewPassword')">
+                                    <i class="fas fa-eye"></i>
+                                </button>
+                            </div>
+                            <div class="password-strength">
+                                <div class="strength-bar">
+                                    <div class="strength-fill" id="resetStrengthFill"></div>
+                                </div>
+                                <span class="strength-text" id="resetStrengthText">密码强度：弱</span>
+                            </div>
+                        </div>
+                        
+                        <div class="input-group">
+                            <label for="resetConfirmPassword">确认新密码</label>
+                            <div class="input-wrapper">
+                                <i class="fas fa-lock"></i>
+                                <input type="password" id="resetConfirmPassword" placeholder="请再次输入新密码" required>
+                                <button type="button" class="password-toggle" onclick="togglePasswordVisibility('resetConfirmPassword')">
+                                    <i class="fas fa-eye"></i>
+                                </button>
+                            </div>
+                        </div>
+                        
+                        <div class="password-requirements">
+                            <h4>密码要求：</h4>
+                            <ul>
+                                <li id="reset-req-length"><i class="fas fa-times"></i> 8-20个字符</li>
+                                <li id="reset-req-uppercase"><i class="fas fa-times"></i> 包含大写字母</li>
+                                <li id="reset-req-lowercase"><i class="fas fa-times"></i> 包含小写字母</li>
+                                <li id="reset-req-number"><i class="fas fa-times"></i> 包含数字</li>
+                                <li id="reset-req-special"><i class="fas fa-times"></i> 包含特殊字符</li>
+                            </ul>
+                        </div>
+                        
+                        <div class="password-actions">
+                            <button type="button" class="auth-btn secondary" onclick="backToResetVerification()">
+                                <i class="fas fa-arrow-left"></i>
+                                返回验证
+                            </button>
+                            <button type="button" class="auth-btn primary" id="completePasswordReset">
+                                <i class="fas fa-check"></i>
+                                完成重置
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="form-footer">
+                    <p>想起密码了？ <a href="#" onclick="switchToLogin()">返回登录</a></p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 成功提示模态框 -->
+    <div class="modal hidden" id="successModal">
+        <div class="modal-content">
+            <div class="modal-header success">
+                <i class="fas fa-check-circle"></i>
+                <h3>操作成功</h3>
+            </div>
+            <div class="modal-body">
+                <p id="successMessage">操作已成功完成</p>
+            </div>
+            <div class="modal-footer">
+                <button class="auth-btn primary" onclick="closeModal()">确定</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="auth.js"></script>
+</body>
+</html>
